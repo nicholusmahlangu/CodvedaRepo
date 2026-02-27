@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>Users API Frontend</title>
@@ -131,6 +131,154 @@ async function editUser(id, oldName, oldEmail) {
 
 
 // Load users on page load
+fetchUsers();
+</script>
+
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users Manager</title>
+
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            border-radius: 12px;
+        }
+
+        .user-card {
+            transition: transform 0.2s ease;
+        }
+
+        .user-card:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-custom {
+            min-width: 70px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">Users Manager</h1>
+        <p class="text-muted">Simple CRUD App with Express API</p>
+    </div>
+
+    <!-- Add User Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form id="userForm" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" id="name" class="form-control" placeholder="Enter Name" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="email" id="email" class="form-control" placeholder="Enter Email" required>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users List -->
+    <div id="usersList" class="row g-3"></div>
+
+</div>
+
+<script>
+const apiUrl = '/users';
+const form = document.getElementById('userForm');
+const usersList = document.getElementById('usersList');
+
+// Fetch all users
+async function fetchUsers() {
+    const res = await fetch(apiUrl);
+    const users = await res.json();
+
+    usersList.innerHTML = '';
+
+    users.forEach(user => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6';
+
+        col.innerHTML = `
+            <div class="card shadow-sm user-card">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">${user.name}</h5>
+                        <small class="text-muted">${user.email}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-warning btn-custom me-2"
+                            onclick="editUser(${user.id}, '${user.name}', '${user.email}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger btn-custom"
+                            onclick="deleteUser(${user.id})">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        usersList.appendChild(col);
+    });
+}
+
+// Add user
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+
+    await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email })
+    });
+
+    form.reset();
+    fetchUsers();
+});
+
+// Delete user
+async function deleteUser(id) {
+    await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+    fetchUsers();
+}
+
+// Edit user
+async function editUser(id, oldName, oldEmail) {
+    const name = prompt('Enter new name:', oldName);
+    const email = prompt('Enter new email:', oldEmail);
+
+    if (!name || !email) return;
+
+    await fetch(`${apiUrl}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email })
+    });
+
+    fetchUsers();
+}
+
+// Load users
 fetchUsers();
 </script>
 
