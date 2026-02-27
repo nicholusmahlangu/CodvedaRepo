@@ -4,6 +4,7 @@ const port = 3000;
 
 //Middleware to parse JSON bodies
 app.use(express.json());
+app.use(express.static('public'));
 
 //In memory data store for users
 let users = [];
