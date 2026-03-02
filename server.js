@@ -1,15 +1,24 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
 const app = express();
 const port = 3000;  
+const SECRET_KEY = 'your_secret_key';
+
+//Fake user for authentication
+const users = [];
 
 //Middleware to parse JSON bodies
 app.use(express.json());
 app.use(express.static('public'));
 
 //In memory data store for users
-let users = [];
+
 let currentId = 1;
 
+const cors = require('cors');
+app.use(cors());
 /**
  * Create a new user
  * POST /users
@@ -73,6 +82,53 @@ app.delete('/users/:id', (req, res) => {
     }
     const deletedUser = users.splice(index, 1);
     res.json(deletedUser[0]);
+});
+
+/*===============================
+SIGNUP AND LOGIN ENDPOINTS
+*/
+app.post('/signup', async (req, res) => {
+    const { username, password } = req.body;
+
+    const existingUser = users.find(u => u.username === username);
+    if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    users.push({
+        username,
+        password: hashedPassword,
+        role: 'user'
+    });
+    res.status(201).json({ message: 'User created successfully' });
+});
+
+/*
+===========================
+Login
+==========================
+*/
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    const user = users.find(u => u.username === username);
+    if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+
+    }
+
+    const ismatch = await bcrypt.compare(password, user.password);
+    if (!ismatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+        { username: user.username, role: user.role },
+        SECRET_KEY,
+        { expiresIn: '1h' }
+    );
+    res.json({ token });
 });
 
 //start the server

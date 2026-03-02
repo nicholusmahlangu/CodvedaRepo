@@ -1,0 +1,5 @@
+<app-user-form (userCreated)="addUser($event)"></app-user-form>
+<div *ngFor="let user of users">
+  <strong>{{ user.name }} ({{ user.email }})</strong>   
+    <button (click)="deleteUser(user.id!)">Delete</button>
+</div>
