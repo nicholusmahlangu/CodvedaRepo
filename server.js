@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 3000;  
-const SECRET_KEY = 'your_secret_key';
+const SECRET_KEY = 'mySuperSecretKey';
 
 //Fake user for authentication
 const users = [];
@@ -131,7 +131,124 @@ app.post('/login', async (req, res) => {
     res.json({ token });
 });
 
+const { authenticateToken, authorizeRole } = require('./middleware/auth');
+
+/*
+============================
+PROTECTED ROUTE(Any Logged User)
+============================
+*/
+app.get('profile', authenticateToken, (req, res) => {
+    res.json({ message: `Welcome ${req.user.username}! This is your profile. Profile accessed` });
+});
+
+/**
+ * 
+ * =============================
+ * Admin Only Route
+ * ============================
+ */
+
+app.get('/admin', authenticateToken, authorizeRole('admin'), (req, res) => {
+    res.json({ message: `Welcome Admin ${req.user.username}! This is the admin panel.` });
+});
+
+// app.listen(port, () => {
+//     console.log(`Server is running on http://localhost:${port}`);
+// }   );
 //start the server
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
+});
+
+// const mysql = require('mysql2');
+
+// const db = mysql.createConnection({
+//   host: 'localhost',
+//   user: 'root',
+//   password: '',   // XAMPP default is empty
+//   database: 'codveda'
+// });
+
+// db.connect((err) => {
+//   if (err) {
+//     console.error('Database connection failed:', err);
+//   } else {
+//     console.log('Connected to MySQL');
+//   }
+// });
+
+// app.post('/users', (req, res) => {
+//   const { name, email, age } = req.body;
+
+//   const sql = 'INSERT INTO users (name, email, age) VALUES (?, ?, ?)';
+//   db.query(sql, [name, email, age], (err, result) => {
+//     if (err) return res.status(500).json(err);
+//     res.json({ message: 'User added successfully', id: result.insertId });
+//   });
+// });
+const mongoose = require('mongoose');
+
+mongoose.connect('mongodb://127.0.0.1:27017/codvedaDB')
+.then(() => console.log('MangoDB Connected'))
+.catch(err => console.log(err));
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  age: Number
+});
+
+const User = mongoose.model('User', userSchema);
+
+app.post('/users', async (req, res) => {
+  const { name, email, age } = req.body;        
+    try {
+        const newUser = new User({ name, email, age });
+        const savedUser = await newUser.save();
+        res.status(201).json(savedUser);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create user' });
+    }
+}); 
+
+app.post('/users', async (req, res) => {
+  try {
+    const user = new User(req.body);
+    const savedUser = await user.save();
+    res.json(savedUser);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+app.get('/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+app.put('/users/:id', async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+app.delete('/users/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
